@@ -5,7 +5,7 @@ set -e
 cores=${CORES:-16}
 plan_json=${1:-./dist-newstyle/cache/plan.json}
 nix_dir=${2:-nix}
-output_nix=${3:-haskell-overlay.nix}
+output_nix=${3:-haskell-overlay-global.nix}
 
 mkdir -p ${nix_dir}
 
@@ -21,7 +21,7 @@ function generate() {
   nix_pkg_name_version=$5
 
   cabal2nix --no-check --no-haddock "cabal://${nix_pkg_name_version}" > ${nix_dir}/${nix_generated_dirname}/${nix_pkg_filename}
-  echo "  ${nix_pkg_name} = buildGlobal ./${nix_generated_dirname}/${nix_pkg_filename} (attrs.${nix_pkg_name} or { });"
+  echo "  ${nix_pkg_name} = build ./${nix_generated_dirname}/${nix_pkg_filename} (attrs.${nix_pkg_name} or { });"
 }
 
 
@@ -38,14 +38,16 @@ libs=$(cat ${plan_json} |
 cat <<END_NIX > ${nix_dir}/${output_nix}
 { overrideCabal,
   attrs ? {},
-  globalConfig ? { doCheck = false; doCoverage = false; doHaddock = false; doBenchmark = false; },
+  config ? {},
 }:
 
 final: prev:
 let
-  buildGlobal = src: attrs: overrideCabal
+  defaultConfig = { doCheck = false; doCoverage = false; doHaddock = false; doBenchmark = false; };
+  cfg = defaultConfig // config;
+  build = src: attrs: overrideCabal
     (final.callPackage src attrs)
-    (old: { inherit (globalConfig) doCheck doCoverage doHaddock doBenchmark; });
+    (old: { inherit (cfg) doCheck doCoverage doHaddock doBenchmark; });
 in {
 ${libs}
 }
