@@ -21,7 +21,7 @@ function generate() {
   nix_pkg_name_version=$5
 
   cabal2nix --no-check --no-haddock "cabal://${nix_pkg_name_version}" > ${nix_dir}/${nix_generated_dirname}/${nix_pkg_filename}
-  echo "  ${nix_pkg_name} = buildGlobal ./${nix_generated_dirname}/${nix_pkg_filename} {};"
+  echo "  ${nix_pkg_name} = buildGlobal ./${nix_generated_dirname}/${nix_pkg_filename} (attrs.${nix_pkg_name} or { });"
 }
 
 
@@ -36,14 +36,14 @@ libs=$(cat ${plan_json} |
 
 
 cat <<END_NIX > ${nix_dir}/${output_nix}
-{ haskell,
-  sysPkgs ? {},
+{ overrideCabal,
+  attrs ? {},
   globalConfig ? { doCheck = false; doCoverage = false; doHaddock = false; doBenchmark = false; },
 }:
 
 final: prev:
 let
-  buildGlobal = src: attrs: haskell.lib.overrideCabal
+  buildGlobal = src: attrs: overrideCabal
     (final.callPackage src attrs)
     (old: { inherit (globalConfig) doCheck doCoverage doHaddock doBenchmark; });
 in {
