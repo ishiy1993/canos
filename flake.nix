@@ -8,25 +8,26 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
-      in
-      {
-        # packages.canos-global = pkgs.writeShellApplication {
-        #   name = "canos-global";
-        #   runtimeInputs = [ pkgs.cabal2nix pkgs.jq ];
-        #   text = builtins.readFile ./scripts/canos-global.bash;
-        # };
-        packages.canos-global = pkgs.stdenv.mkDerivation {
-          name = "canos-global";
-          src = ./scripts/canos-global.bash;
-          propagatedInputs = [
-            pkgs.cabal2nix
-            pkgs.jq
-          ];
+        toPkg = attrs: pkgs.stdenv.mkDerivation {
+          inherit (attrs) name src;
+          nativeBuildInputs = [ pkgs.makeWrapper ];
           phases = [ "installPhase" ];
           installPhase = ''
             mkdir -p $out/bin
-            cp $src $out/bin/canos-global
+            cp $src $out/bin/${attrs.name}
+            wrapProgram $out/bin/${attrs.name} --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.cabal2nix pkgs.jq]}
           '';
+        };
+      in
+      {
+
+        packages.canos-global = toPkg {
+          name = "canos-global";
+          src = ./scripts/canos-global.bash;
+        };
+        packages.canos-local = toPkg {
+          name = "canos-local";
+          src = ./scripts/canos-local.bash;
         };
       }
     );
