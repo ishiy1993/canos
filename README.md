@@ -63,7 +63,7 @@ $ git add nix
 $ git commit
 ```
 
-3. Use overlays and build by `nix build '.#your-pkg-name'`.
+3. Use overlays in `flake.nix` and build by `nix build '.#your-pkg-name'`.
 
 ```nix
     let
